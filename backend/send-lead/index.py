@@ -1,7 +1,6 @@
 import json
 import os
 import urllib.request
-import urllib.parse
 
 
 def handler(event: dict, context) -> dict:
@@ -35,26 +34,33 @@ def handler(event: dict, context) -> dict:
     chat_id = '5604974568'
 
     text = (
-        '🔔 *Новая заявка с сайта ЭКОвывоз*\n\n'
-        f'👤 Имя: {name or "не указано"}\n'
-        f'📞 Телефон: {phone}\n'
-        f'📝 Задача: {task or "не указана"}'
+        'Новая заявка с сайта ЭКОвывоз\n\n'
+        f'Имя: {name or "не указано"}\n'
+        f'Телефон: {phone}\n'
+        f'Задача: {task or "не указана"}'
     )
 
-    data = urllib.parse.urlencode({
+    payload = json.dumps({
         'chat_id': chat_id,
         'text': text,
-        'parse_mode': 'Markdown',
-    }).encode()
+    }).encode('utf-8')
 
     req = urllib.request.Request(
         f'https://api.telegram.org/bot{token}/sendMessage',
-        data=data,
+        data=payload,
         method='POST',
+        headers={'Content-Type': 'application/json'},
     )
 
-    with urllib.request.urlopen(req) as resp:
-        resp.read()
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        result = json.loads(resp.read())
+
+    if not result.get('ok'):
+        return {
+            'statusCode': 500,
+            'headers': {'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'Telegram error'}),
+        }
 
     return {
         'statusCode': 200,
