@@ -1,6 +1,6 @@
 import json
 import os
-import urllib.request
+import http.client
 
 
 def handler(event: dict, context) -> dict:
@@ -43,23 +43,24 @@ def handler(event: dict, context) -> dict:
     payload = json.dumps({
         'chat_id': chat_id,
         'text': text,
-    }).encode('utf-8')
+    })
 
-    req = urllib.request.Request(
-        f'https://api.telegram.org/bot{token}/sendMessage',
-        data=payload,
-        method='POST',
+    conn = http.client.HTTPSConnection('api.telegram.org', timeout=15)
+    conn.request(
+        'POST',
+        f'/bot{token}/sendMessage',
+        body=payload,
         headers={'Content-Type': 'application/json'},
     )
-
-    with urllib.request.urlopen(req, timeout=10) as resp:
-        result = json.loads(resp.read())
+    resp = conn.getresponse()
+    result = json.loads(resp.read())
+    conn.close()
 
     if not result.get('ok'):
         return {
             'statusCode': 500,
             'headers': {'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'error': 'Telegram error'}),
+            'body': json.dumps({'error': 'Telegram error', 'details': result}),
         }
 
     return {
