@@ -148,7 +148,7 @@ const Index = () => {
               <span className="h-0.5 w-8 bg-primary" />
               Воронеж · своя техника
             </div>
-            <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-700 leading-[0.95] uppercase text-balance">
+            <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl leading-[0.95] uppercase text-balance" style={{ fontWeight: 900 }}>
               Вывоз мусора,{' '}
               <span className="text-primary">расчистка участков</span>{' '}
               и спил деревьев
