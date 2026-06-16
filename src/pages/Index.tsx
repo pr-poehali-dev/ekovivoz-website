@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -110,8 +110,33 @@ function useReveal() {
   return ref;
 }
 
+const SEND_URL = 'https://functions.poehali.dev/43506fa8-8846-4d0a-a8a5-b958e644f1ad';
+
 const Index = () => {
   const ref = useReveal();
+  const [form, setForm] = useState({ name: '', phone: '', task: '' });
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.phone) return;
+    setStatus('loading');
+    try {
+      const res = await fetch(SEND_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      if (res.ok) {
+        setStatus('success');
+        setForm({ name: '', phone: '', task: '' });
+      } else {
+        setStatus('error');
+      }
+    } catch {
+      setStatus('error');
+    }
+  };
 
   return (
     <div ref={ref} className="min-h-screen bg-background text-foreground font-sans antialiased">
@@ -346,30 +371,64 @@ const Index = () => {
             </div>
           </div>
 
-          <form className="reveal border border-border p-8" style={{ transitionDelay: '120ms' }}>
-            <div className="space-y-5">
-              <div>
-                <label className="text-xs uppercase tracking-wide text-muted-foreground">Имя</label>
-                <Input placeholder="Как к вам обращаться" className="rounded-none mt-2 h-12 focus-visible:ring-primary" />
+          <form onSubmit={handleSubmit} className="reveal border border-border p-8" style={{ transitionDelay: '120ms' }}>
+            {status === 'success' ? (
+              <div className="flex flex-col items-center justify-center py-12 gap-4 text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                  <Icon name="CheckCircle" size={36} className="text-primary" />
+                </div>
+                <h3 className="font-display text-2xl uppercase font-700">Заявка отправлена!</h3>
+                <p className="text-muted-foreground">Перезвоним вам в течение 5 минут.</p>
+                <Button type="button" variant="outline" className="rounded-none mt-2" onClick={() => setStatus('idle')}>
+                  Отправить ещё
+                </Button>
               </div>
-              <div>
-                <label className="text-xs uppercase tracking-wide text-muted-foreground">Телефон</label>
-                <Input placeholder="+7 (___) ___-__-__" className="rounded-none mt-2 h-12 focus-visible:ring-primary" />
+            ) : (
+              <div className="space-y-5">
+                <div>
+                  <label className="text-xs uppercase tracking-wide text-muted-foreground">Имя</label>
+                  <Input
+                    placeholder="Как к вам обращаться"
+                    className="rounded-none mt-2 h-12 focus-visible:ring-primary"
+                    value={form.name}
+                    onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-wide text-muted-foreground">Телефон *</label>
+                  <Input
+                    placeholder="+7 (___) ___-__-__"
+                    className="rounded-none mt-2 h-12 focus-visible:ring-primary"
+                    required
+                    value={form.phone}
+                    onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-wide text-muted-foreground">Что нужно сделать</label>
+                  <Textarea
+                    placeholder="Например: вывезти мусор после демонтажа стен"
+                    className="rounded-none mt-2 min-h-[100px] focus-visible:ring-primary"
+                    value={form.task}
+                    onChange={e => setForm(f => ({ ...f, task: e.target.value }))}
+                  />
+                </div>
+                {status === 'error' && (
+                  <p className="text-sm text-primary">Ошибка отправки. Попробуйте ещё раз или позвоните нам.</p>
+                )}
+                <Button
+                  type="submit"
+                  size="lg"
+                  disabled={status === 'loading'}
+                  className="w-full rounded-none font-display uppercase tracking-wide h-14 bg-primary hover:bg-primary/90 text-white disabled:opacity-60"
+                >
+                  {status === 'loading' ? 'Отправляем...' : 'Получить расчёт'}
+                </Button>
+                <p className="text-xs text-muted-foreground text-center">
+                  Нажимая кнопку, вы соглашаетесь на обработку данных
+                </p>
               </div>
-              <div>
-                <label className="text-xs uppercase tracking-wide text-muted-foreground">Что нужно сделать</label>
-                <Textarea
-                  placeholder="Например: вывезти мусор после демонтажа стен"
-                  className="rounded-none mt-2 min-h-[100px] focus-visible:ring-primary"
-                />
-              </div>
-              <Button type="button" size="lg" className="w-full rounded-none font-display uppercase tracking-wide h-14 bg-primary hover:bg-primary/90 text-white">
-                Получить расчёт
-              </Button>
-              <p className="text-xs text-muted-foreground text-center">
-                Нажимая кнопку, вы соглашаетесь на обработку данных
-              </p>
-            </div>
+            )}
           </form>
         </div>
       </section>
